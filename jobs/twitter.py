@@ -7,6 +7,7 @@ import threading
 from datetime import datetime
 from twython import Twython
 from twitter_key import t_key, t_secret
+from s3 import upload_to_s3
 
 sys.path.insert(0, '../')
 
@@ -23,7 +24,7 @@ def get_tweets( latlong=None ):
 def get_lots_of_tweets( latlong ):
     """ Does pretty much what its long name suggests. """
     all_tweets = {}
-    total_time = 150
+    total_time = 300
     remaining_seconds = total_time
     interval = 30 
     while remaining_seconds > 0:
@@ -51,17 +52,21 @@ def get_lots_of_tweets( latlong ):
 
 
 def run():
-    try:
-        latlong = [24.6333, 46.7167] #[22.280893, 114.173035]
-        t = get_lots_of_tweets( latlong )
-        #target_path = '../twitter/%stweets.json' %(str(datetime.now()))
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
-            f.write( json.dumps(t))
-        threading.Timer(10, run).start()
+    starting = 999999999999999999
+    while starting > 0:
+        try:
+            latlong = [24.6333, 46.7167] #[22.280893, 114.173035]
+            t = get_lots_of_tweets( latlong )
+            #target_path = '../twitter/%stweets.json' %(str(datetime.now()))
+            timestr = time.strftime("%Y%m%d-%H%M%S")
+            with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
+                f.write( json.dumps(t))
+            #threading.Timer(10, run).start()
             #upload = upload_to_s3( target_path, json.dumps(t))
-    except:
-        pass
+            starting += -1
+        except:
+            pass
+    
     
 run()
 
