@@ -52,7 +52,8 @@ def get_lots_of_tweets( latlong ):
 
 def run():
     try:
-        t = get_lots_of_tweets( [22.280893, 114.173035] )
+        latlong = [24.6333, 46.7167] #[22.280893, 114.173035]
+        t = get_lots_of_tweets( latlong )
         #target_path = '../twitter/%stweets.json' %(str(datetime.now()))
         timestr = time.strftime("%Y%m%d-%H%M%S")
         with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
