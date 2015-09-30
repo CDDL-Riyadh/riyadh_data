@@ -63,6 +63,7 @@ def run():
             #     f.write( json.dumps(t))
             # #threading.Timer(10, run).start()
             upload = upload_to_s3( target_path, json.dumps(t))
+            print upload
             starting += -1
         except:
             pass

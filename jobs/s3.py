@@ -16,6 +16,7 @@ def upload_to_s3( target_path, data_string ):
 	k = Key( bucket )
 	k.key = 'data/' + target_path
 	k.set_contents_from_string( data_string )
+	print k
 
 
 
