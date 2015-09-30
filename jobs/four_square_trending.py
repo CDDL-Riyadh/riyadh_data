@@ -5,18 +5,26 @@ import sys
 from datetime import datetime
 import foursquare
 
-sys.path.insert(0, '../')
+#sys.path.insert(0, '../')
 from s3 import upload_to_s3
+from foursquare_key import f_key, f_secret, f_redirect
+#from s3 import upload_to_s3
+
+sys.path.insert(0, '../')
+
+client_id = f_key
+client_secret = f_secret
+redirect = f_redirect
 
 # Set the API keys
-client_id = os.environ['FOURSQUARE_ID']
-client_secret = os.environ['FOURSQUARE_SECRET']
-redirect = os.environ['FOURSQUARE_REDIRECT']
+# client_id = os.environ['FOURSQUARE_ID']
+# client_secret = os.environ['FOURSQUARE_SECRET']
+# redirect = os.environ['FOURSQUARE_REDIRECT']
 
 # Set some query parameters
-ll = '22.2670,114.1880' 
+ll = '24.6333,46.7167'#'22.2670,114.1880' 
 #ll = '40.7127, -74.0059' #NY
-total_time = 30 
+total_time = 30
 
 def get_checkins(ll):
     # Construct the client object
@@ -28,7 +36,7 @@ def get_checkins(ll):
 def get_many_checkins(ll, total_time):
     all_checkins = {}
     remaining_seconds = total_time
-    interval = 30
+    interval = 3
 
     while remaining_seconds > 0:
         added = 0
@@ -63,11 +71,19 @@ def get_many_checkins(ll, total_time):
     return all_checkins
     
 def run():
-    checkins = get_many_checkins(ll, total_time)
-    target_path = 'foursquare/%sfoursquare_trending.json' %(str(datetime.now()))
+    starting = 999999999999999999
+    while starting > 0:
+        print 99999999999
+        try:
+            print 555555555555
+            checkins = get_many_checkins(ll, total_time)
+            timestr = time.strftime("%Y%m%d-%H%M%S")
+            #target_path = 'foursquare/%sfoursquare_trending.json' %(str(datetime.now()))
+            #upload = upload_to_s3( target_path, json.dumps(checkins))
+            with open( 'four_square_trending\%sfour_trending.json' %(timestr), 'w' ) as f:
+               f.write(json.dumps(checkins))
+            starting += -1
+        except:
+            pass
 
-    upload = upload_to_s3( target_path, json.dumps(checkins))
-    #with open( '/Volumes/XP/Documents and Settings/Carlos Emilio/My Documents/sg2014/foursquare/%sfour_trending.json' %(str(datetime.now())), 'w' ) as f:
-    #    f.write(json.dumps(checkins))
-
-#run()
+run()

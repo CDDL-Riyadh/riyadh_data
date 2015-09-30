@@ -57,12 +57,12 @@ def run():
         try:
             latlong = [24.6333, 46.7167] #[22.280893, 114.173035]
             t = get_lots_of_tweets( latlong )
-            #target_path = '../twitter/%stweets.json' %(str(datetime.now()))
-            timestr = time.strftime("%Y%m%d-%H%M%S")
-            with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
-                f.write( json.dumps(t))
-            #threading.Timer(10, run).start()
-            #upload = upload_to_s3( target_path, json.dumps(t))
+            target_path = 'twitter/%stweets.json' %(str(datetime.now()))
+            #timestr = time.strftime("%Y%m%d-%H%M%S")
+            # with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
+            #     f.write( json.dumps(t))
+            # #threading.Timer(10, run).start()
+            upload = upload_to_s3( target_path, json.dumps(t))
             starting += -1
         except:
             pass

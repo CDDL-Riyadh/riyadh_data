@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-
-
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
+from s3_key import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 
 def upload_to_s3( target_path, data_string ):
 	""" 
@@ -12,8 +11,8 @@ def upload_to_s3( target_path, data_string ):
 	target_path='twitter/06-25-14-300.json', data_string='{"some":"big","json":"object"}'
 	This would place the json string into a file on S3 located at data/twitter/06-25-14-300.json
 	"""
-	conn = S3Connection()
-	bucket = conn.get_bucket('sg14fbr')
+	conn = S3Connection(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+	bucket = conn.get_bucket('cddl-riyadh')
 	k = Key( bucket )
 	k.key = 'data/' + target_path
 	k.set_contents_from_string( data_string )
