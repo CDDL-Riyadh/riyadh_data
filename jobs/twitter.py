@@ -3,6 +3,7 @@ import json
 import time
 import sys
 import threading
+import cStringIO
 
 from datetime import datetime
 from twython import Twython
@@ -52,7 +53,7 @@ def get_lots_of_tweets( latlong ):
 
 
 def run():
-    starting = 999999999999999999
+    starting = 999999999999999999999
     while starting > 0:
         try:
             latlong = [24.6333, 46.7167] #[22.280893, 114.173035]
@@ -62,14 +63,27 @@ def run():
             # with open( 'twitter\%stweets.json' %(timestr), 'w' ) as f:
             #     f.write( json.dumps(t))
             # #threading.Timer(10, run).start()
-            upload = upload_to_s3( target_path, json.dumps(t))
-            print upload
+
+            # output = cStringIO.StringIO()
+            # output.write(json.dumps(t))
+            # print type(json.dumps(t))
+            # print output
+            new_t = json.dumps(t)
+            upload = upload_to_s3( target_path, new_t)
+            # print upload
             starting += -1
         except:
             pass
     
-    
 run()
+
+# from io import BytesIO
+# bytesIO = BytesIO()
+# bytesIO.write('whee')
+# bytesIO.seek(0)
+# s3_file.set_contents_from_file(bytesIO)
+
+
 
 
 
