@@ -24,7 +24,7 @@ redirect = f_redirect
 # Set some query parameters
 ll = '24.6333,46.7167'#'22.2670,114.1880' 
 #ll = '40.7127, -74.0059' #NY
-total_time = 30
+total_time = 300
 
 def get_checkins(ll):
     # Construct the client object
@@ -36,7 +36,7 @@ def get_checkins(ll):
 def get_many_checkins(ll, total_time):
     all_checkins = {}
     remaining_seconds = total_time
-    interval = 3
+    interval = 30
 
     while remaining_seconds > 0:
         added = 0
@@ -73,15 +73,13 @@ def get_many_checkins(ll, total_time):
 def run():
     starting = 999999999999999999
     while starting > 0:
-        print 99999999999
         try:
-            print 555555555555
             checkins = get_many_checkins(ll, total_time)
             timestr = time.strftime("%Y%m%d-%H%M%S")
-            #target_path = 'foursquare/%sfoursquare_trending.json' %(str(datetime.now()))
-            #upload = upload_to_s3( target_path, json.dumps(checkins))
-            with open( 'four_square_trending\%sfour_trending.json' %(timestr), 'w' ) as f:
-               f.write(json.dumps(checkins))
+            target_path = 'foursquare/%sfoursquare_trending.json' %(str(datetime.now()))
+            upload = upload_to_s3( target_path, json.dumps(checkins))
+            # with open( 'four_square_trending\%sfour_trending.json' %(timestr), 'w' ) as f:
+            #    f.write(json.dumps(checkins))
             starting += -1
         except:
             pass
