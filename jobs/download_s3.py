@@ -12,7 +12,7 @@ conn = boto.connect_s3(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 bucket = conn.get_bucket(bucket_name)
 # go through the list of files
 bucket_list = bucket.list()#'data/'+ datatype)
-for key in bucket_list:
+for i, key in enumerate(bucket_list):
   #key_string = str(l.key)
 
   # check if file exists locally, if not: download it
@@ -20,11 +20,13 @@ for key in bucket_list:
   #   key.get_contents_to_filename(key.name)#'2015-10-14 23:55:18.011746foursquare_trending.json')
   if not os.path.exists('data'):
       os.makedirs('data')
-    
-  if not os.path.exists('2015-10-14 23:55:18.011746foursquare_trending.json'):
-      key.get_contents_to_filename(key.name)#self.LOCAL_PATH+filename)
-      if _debug:
-          print "Downloaded from bucket: "#+filename
+  if i ==1:  
+    if not os.path.exists('2015-10-14 23:55:18.011746foursquare_trending.json'):
+        with open('test', 'wb') as temp_file:
+            key.get_contents_to_file(temp_file)
+      # key.get_contents_to_filename(key.name)#self.LOCAL_PATH+filename)
+      # if _debug:
+      #     print "Downloaded from bucket: "#+filename
   # check so file is downloaded, if so: delete from bucket
   # if os.path.exists(self.LOCAL_PATH+filename):
   #     key_list.delete()
