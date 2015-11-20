@@ -61,12 +61,17 @@ def create_twitter_node(tid, tweet, cypher):
         'description': raw_user['description']
     }
     tweet_props['user'] = user_props['username']
-        
+    # "in_reply_to_user_id":2570000839
+    # "in_reply_to_user_id_str":"2570000839"
+    # "in_reply_to_status_id":651952261241962496
+    # "in_reply_to_status_id_str":"651952261241962496",
+    # "retweeted":false,
     query_string = """ 
             MERGE (tweet:Social:Tweets {
                 lat: {lat}, lon: {lon}, in_reply_to_user_id_str: {in_reply_to_user_id_str},
                 in_reply_to_status_id_str: {in_reply_to_status_id_str}, time:{time}, origin:{origin},
-                raw_source: {raw_source}, user: {user}})
+                raw_source: {raw_source}, user: {user}, content: {content}, tweet_id: {tweet_id}
+            })
             MERGE (user:Users:TwitterUsers {  
                 username: {username},
                 followers_count: {followers_count},
@@ -79,18 +84,9 @@ def create_twitter_node(tid, tweet, cypher):
         """
     cypher.execute(query_string, lat=tweet_props['lat'], lon=tweet_props['lon'], in_reply_to_user_id_str=tweet_props['in_reply_to_user_id_str'],
                    in_reply_to_status_id_str=tweet_props['in_reply_to_status_id_str'], time=tweet_props['time'], origin=tweet_props['origin'],
-                   raw_source=tweet_props['raw_source'], user=tweet_props['user'], username=user_props['username'],
-                   followers_count=user_props['followers_count'], id_str=user_props['id_str'], location=user_props['location'],
-                   lang=user_props['lang'], name=user_props['name'], description=user_props['description'])
-    #tweet_node = Node.cast('tweet','Social','Tweets',tweet_props)
-    #user_node = Node.cast('user','Users','TwitterUsers', user_props)
-    # DB.create(tweet_node)
-    # DB.create(user_node)
-    
-    'delete duplicates'
-    # START n=node(*), m=node(*)
-    # WHERE HAS (n.tweet_id) AND HAS (m.tweet_id) AND n.tweet_id=m.tweet_id AND id(n)<id(m)
-    # DELETE n
+                   raw_source=tweet_props['raw_source'], user=tweet_props['user'], content=tweet_props['content'], tweet_id=tweet_props['tweet_id'],
+                   username=user_props['username'], followers_count=user_props['followers_count'], id_str=user_props['id_str'],
+                   location=user_props['location'], lang=user_props['lang'], name=user_props['name'], description=user_props['description'])
     
     'delete all'
     # MATCH (n)
@@ -99,7 +95,7 @@ def create_twitter_node(tid, tweet, cypher):
 
 def create_spatial_tweets(spatial_layer_name, labels_string):
     spatial.create_layer(spatial_layer_name)
-    tweet_query = "MATCH ({}) RETURN tweet;".format(labels_string)
+    tweet_query = "MATCH ({}) RETURN Social;".format(labels_string)
     records = DB.cypher.execute(tweet_query)
     for record in records:
         node = record[0]
@@ -111,20 +107,42 @@ def create_spatial_tweets(spatial_layer_name, labels_string):
         shape = parse_lat_long(tweet_loc)
         
         tweet_id = properties['tweet_id']
-        #print tweet_id, node_id
-        # try:
-        #     spatial.create_geometry(geometry_name=tweet_id, wkt_string=shape.wkt, layer_name="Spatial_Tweets", node_id=node_id)
-        #     print('created {}'.format(tweet_id))
-        # except GeometryExistsError:
-        #     print 'The geometry is already in the DB'
+        try:
+            spatial.create_geometry(geometry_name=tweet_id, wkt_string=shape.wkt, layer_name="Spatial_Tweets", node_id=node_id)
+            print('created {}'.format(tweet_id))
+        except GeometryExistsError:
+            print 'The geometry is already in the DB'
             
 def get_node_by_label_property(label, prop, prop_val):
     query = "MATCH (n:%s {%s:'%s'}) RETURN n" %(label, prop, prop_val)
     records = DB.cypher.execute(query)
     return records
             
+def get_node_name(label):
+    if ':' in label:
+        index = label.index(':')
+        label = label[:index]
+    return label
+        
+def add_relationship(label_a, label_b, property_a, property_b):
+    data_name = get_node_name(label_a)
+    query = "MATCH ({}) RETURN {};".format(label_a, data_name)
+    
+    records = DB.cypher.execute(query)
+    for record in records:
+        node = record[0]
+        node_id = node._id
+        properties = node.properties
+        value_a = properties[property_a]
+        if value_a != '':
+            other_nodes = get_node_by_label_property(label_b, property_b, value_a)
+            print len(other_nodes)
+
 # This add the relationships between tweets and users tweeting
 def add_user_tweet_relation(label_a, label_b, property_a, property_b):
+    graph = Graph()
+    cypher = graph.cypher
+    
     tweet_query = "MATCH ({}) RETURN user;".format(label_a)
     records = DB.cypher.execute(tweet_query)
     for record in records:
@@ -132,11 +150,16 @@ def add_user_tweet_relation(label_a, label_b, property_a, property_b):
         node_id = node._id
         properties = node.properties
         value_a = properties[property_a]
-        print value_a
         other_nodes = get_node_by_label_property(label_b, property_b, value_a)
         if len( other_nodes ) > 0:
             for other_node in other_nodes:
+                # t_time = str(other_node[0]['time'])
+                # query_string = 'MERGE (%s)-[r:Tweeted {tweet_time: %s}]->(%s)' %(record[0], t_time, other_node[0])
+                # print query_string
+                # cypher.execute(query_string)
                 relationship = Relationship(record[0], 'Tweeted', other_node[0], tweet_time=other_node[0]['time'])
+                #http://localhost:7474/browser/
+                #print relationship.exists
                 DB.create(relationship)
 
 def all_tweets_s3_to_neo(tweet_jsons, file_path):
@@ -151,15 +174,24 @@ def all_tweets_s3_to_neo(tweet_jsons, file_path):
             push_all_tweets_to_db( data )
             
     'Create Spatial Index'
-    create_spatial_tweets("Spatial_Tweets", 'tweet:Social:Tweets')
+    create_spatial_tweets("Spatial_Tweets", 'Social:Tweets')
     
     'Create Users-Tweet Relationships'
     add_user_tweet_relation('user:Users:TwitterUsers', 'Social:Tweets', 'username', 'user')
+    add_relationship('tweet:Social:Tweets', 'tweet:Social:Tweets', 'in_reply_to_status_id_str', 'tweet_id')
+    add_relationship('tweet:Social:Tweets', 'user:Users:TwitterUsers', 'in_reply_to_user_id_str', 'id_str')
+    
+    # MATCH (ee:Person) WHERE ee.name = "Emil" RETURN ee;
+    #MATCH (ee:Person)-[:KNOWS]-(friends)
+    #WHERE ee.name = "Emil" RETURN ee, friends
+    #START a=node(3)
+    #MATCH (a)-[:KNOWS*]->(d)
+    #RETURN distinct d
 
 if __name__=="__main__":
-    #file_dir = "F:/Dropbox (MIT)/Independent Study Sarah/Riyadh Data/01. JSON/twitter"
-    file_dir = "C:/Users/mitadm/Dropbox (MIT)/Independent Study Sarah/Riyadh Data/01. JSON/twitter"
-    onlyfiles = [ f for f in listdir(file_dir) if isfile(join(file_dir,f)) and not f.startswith('.')][:2]
+    file_dir = "F:/Dropbox (MIT)/Independent Study Sarah/Riyadh Data/01. JSON/twitter"
+    #file_dir = "C:/Users/mitadm/Dropbox (MIT)/Independent Study Sarah/Riyadh Data/01. JSON/twitter"
+    onlyfiles = [ f for f in listdir(file_dir) if isfile(join(file_dir,f)) and not f.startswith('.')]#[:1000]
     
     all_tweets_s3_to_neo(onlyfiles, file_dir)
     
